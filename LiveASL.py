@@ -4,7 +4,7 @@ import numpy as np
 from tensorflow.keras.models import load_model
 
 # Carica il modello di classificazione delle immagini
-classification_model = load_model("./Modelli/modello1")
+#classification_model = load_model("./Modelli/modello1")
 
 # Inizializza il rilevatore di mano di MediaPipe
 mp_hands = mp.solutions.hands
@@ -37,9 +37,16 @@ def detect_and_classify_gesture(frame):
                 # Disegna il rettangolo intorno alla mano sul frame
                
                 #
-                start=(bbox[0], bbox[1])
-                end=(bbox[2], bbox[3])
-                cv2.rectangle(frame, start, end, (0, 255, 0), 2)
+                if(len(bbox)==4):
+                    start=(int(bbox[0]), int(bbox[1]))
+                    end=(int(bbox[2]), int(bbox[3]))
+                    h = bbox[3]-bbox[1]
+                    w = bbox[2]-bbox[0]
+                    
+                    hand_img = frame[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2])]
+                    cv2.imshow('Hand Image', hand_img)
+                    cv2.rectangle(frame, start, end, (0, 255, 0), 2)
+
 
                 # Visualizza il risultato della classificazione
                 #print("Gesto classificato:", gesture_class)
