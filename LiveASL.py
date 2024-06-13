@@ -1,11 +1,21 @@
 import cv2
+import json
 import mediapipe as mp
 import numpy as np
 from tensorflow.keras.models import load_model
-
+def apply_edge_detection_to_image(img):
+    # Applicare il filtro di Sobel
+    sobelx = cv2.Sobel(img, cv2.CV_64F, 1, 0, ksize=3)  # Rileva bordi orizzontali
+    sobely = cv2.Sobel(img, cv2.CV_64F, 0, 1, ksize=3)  # Rileva bordi verticali
+    sobel_combined = cv2.magnitude(sobelx, sobely)
+    # Normalizzare l'immagine Sobel combinata
+    sobel_combined = cv2.normalize(sobel_combined, None, 0, 255, cv2.NORM_MINMAX)
+    sobel_combined = np.uint8(sobel_combined)
+    return sobel_combined
 # Carica il modello di classificazione delle immagini
-#classification_model = load_model("./Modelli/modello1")
-
+classification_model = load_model("./Modelli/cnn_3")
+with open("labels.json", 'r') as file_json:
+    labels = json.load(file_json)
 # Inizializza il rilevatore di mano di MediaPipe
 mp_hands = mp.solutions.hands
 hands = mp_hands.Hands(static_image_mode=False, max_num_hands=1, min_detection_confidence=0.5, min_tracking_confidence=0.5)
@@ -38,15 +48,29 @@ def detect_and_classify_gesture(frame):
                
                 #
                 if(len(bbox)==4):
-                    start=(int(bbox[0]), int(bbox[1]))
-                    end=(int(bbox[2]), int(bbox[3]))
-                    h = bbox[3]-bbox[1]
-                    w = bbox[2]-bbox[0]
+                    x = int(bbox[0])-100
+                    y = int(bbox[1])-100
+                    h = int(bbox[3]-bbox[1]+200)
+                    w = int(bbox[2]-bbox[0]+200)
+                    start=(x,y)
+                    end=(x+w, y+h)
+               
                     
-                    hand_img = frame[int(bbox[1]):int(bbox[3]), int(bbox[0]):int(bbox[2])]
-                    cv2.imshow('Hand Image', hand_img)
-                    cv2.rectangle(frame, start, end, (0, 255, 0), 2)
-
+                    hand_img = frame[y:y+h, x:x+w]
+                    try:
+                        hand_img_resized = cv2.resize(hand_img, (64,64))
+                        
+                        hand_img_resized = cv2.cvtColor(hand_img_resized, cv2.COLOR_BGR2GRAY)
+                       
+                        hand_img_norm = hand_img_resized/255
+                        cv2.imshow('Hand Image', hand_img_resized)
+                        hand_img_norm = np.expand_dims(hand_img_norm,axis=0)
+                        gesture_class = classification_model.predict(hand_img_norm)
+                        print(labels[np.argmax(gesture_class)])
+                        cv2.rectangle(frame, start, end, (0, 255, 0), 2)
+                        cv2.putText(frame, labels[np.argmax(gesture_class)], (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
+                    except Exception as e:
+                        print(e)
 
                 # Visualizza il risultato della classificazione
                 #print("Gesto classificato:", gesture_class)
