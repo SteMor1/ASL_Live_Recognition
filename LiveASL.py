@@ -3,6 +3,12 @@ import json
 import mediapipe as mp
 import numpy as np
 from tensorflow.keras.models import load_model
+import pickle
+
+# Carica il modello dal file
+"""with open('./Modelli/tree.pkl', 'rb') as file:
+    classification_model = pickle.load(file)"""
+
 def apply_edge_detection_to_image(img):
     # Applicare il filtro di Sobel
     sobelx = cv2.Sobel(img, cv2.CV_64F, 1, 0, ksize=3)  # Rileva bordi orizzontali
@@ -13,13 +19,13 @@ def apply_edge_detection_to_image(img):
     sobel_combined = np.uint8(sobel_combined)
     return sobel_combined
 # Carica il modello di classificazione delle immagini
-classification_model = load_model("./Modelli/landmarks_nn")
-with open("labels2.json", 'r') as file_json:
+classification_model = load_model("./Modelli/nn_landmarks")
+with open("labels.json", 'r') as file_json:
     labels = json.load(file_json)
 # Inizializza il rilevatore di mano di MediaPipe
 mp_hands = mp.solutions.hands
 hands = mp_hands.Hands(static_image_mode=False, max_num_hands=1, min_detection_confidence=0.5, min_tracking_confidence=0.5)
-
+mp_drawing = mp.solutions.drawing_utils
 # Funzione per rilevare le mani e classificare il gesto
 def detect_and_classify_gesture(frame):
     # Converti il frame in scala di grigi
@@ -34,13 +40,11 @@ def detect_and_classify_gesture(frame):
             # Cattura le coordinate dei landmark della mano
             hand_landmarks_np = np.array([(lm.x, lm.y) for lm in hand_landmarks.landmark])
             # Converte le coordinate in un array 1D
-            landmarks =[int(j) for a,i in enumerate(hand_landmarks_np) for j in i]
+            landmarks =[float(j) for a,i in enumerate(hand_landmarks_np) for j in i]
             landmarks = np.expand_dims(landmarks, axis=0)
             bbox = [min(hand_landmarks_np[:,0])*image_width, min(hand_landmarks_np[:,1])*image_height, max(hand_landmarks_np[:,0])*image_width, max(hand_landmarks_np[:,1])*image_height]
-            # Classifica il gesto utilizzando il modello di classificazione
-            #gesture_class = classification_model.predict(hand_image)
-            
-            # Verifica se ci sono punti validi
+            print(landmarks)
+            mp_drawing.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
             if len(hand_landmarks_np) > 0:
                 # Ottieni le coordinate del rettangolo che circonda la mano
                
@@ -49,10 +53,10 @@ def detect_and_classify_gesture(frame):
                
                 #
                 if(len(bbox)==4):
-                    x = int(bbox[0])-100
-                    y = int(bbox[1])-100
-                    h = int(bbox[3]-bbox[1]+200)
-                    w = int(bbox[2]-bbox[0]+200)
+                    x = int(bbox[0])-50
+                    y = int(bbox[1])-50
+                    h = int(bbox[3]-bbox[1]+100)
+                    w = int(bbox[2]-bbox[0]+100)
                     start=(x,y)
                     end=(x+w, y+h)
                
@@ -67,8 +71,9 @@ def detect_and_classify_gesture(frame):
                         cv2.imshow('Hand Image', hand_img_resized)
                         hand_img_norm = np.expand_dims(hand_img_norm,axis=0)
                         gesture_class = classification_model.predict(landmarks)
-                        print(labels[np.argmax(gesture_class)])
+                        #print(labels[np.argmax(gesture_class)])
                         cv2.rectangle(frame, start, end, (0, 255, 0), 2)
+                        
                         cv2.putText(frame, labels[np.argmax(gesture_class)], (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
                     except Exception as e:
                         print(e)
