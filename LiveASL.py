@@ -13,8 +13,8 @@ def apply_edge_detection_to_image(img):
     sobel_combined = np.uint8(sobel_combined)
     return sobel_combined
 # Carica il modello di classificazione delle immagini
-classification_model = load_model("./Modelli/cnn_3")
-with open("labels.json", 'r') as file_json:
+classification_model = load_model("./Modelli/landmarks_nn")
+with open("labels2.json", 'r') as file_json:
     labels = json.load(file_json)
 # Inizializza il rilevatore di mano di MediaPipe
 mp_hands = mp.solutions.hands
@@ -34,7 +34,8 @@ def detect_and_classify_gesture(frame):
             # Cattura le coordinate dei landmark della mano
             hand_landmarks_np = np.array([(lm.x, lm.y) for lm in hand_landmarks.landmark])
             # Converte le coordinate in un array 1D
-            hand_image = np.expand_dims(hand_landmarks_np, axis=0)
+            landmarks =[int(j) for a,i in enumerate(hand_landmarks_np) for j in i]
+            landmarks = np.expand_dims(landmarks, axis=0)
             bbox = [min(hand_landmarks_np[:,0])*image_width, min(hand_landmarks_np[:,1])*image_height, max(hand_landmarks_np[:,0])*image_width, max(hand_landmarks_np[:,1])*image_height]
             # Classifica il gesto utilizzando il modello di classificazione
             #gesture_class = classification_model.predict(hand_image)
@@ -58,14 +59,14 @@ def detect_and_classify_gesture(frame):
                     
                     hand_img = frame[y:y+h, x:x+w]
                     try:
-                        hand_img_resized = cv2.resize(hand_img, (64,64))
+                        hand_img_resized = cv2.resize(hand_img, (200,200))
                         
                         hand_img_resized = cv2.cvtColor(hand_img_resized, cv2.COLOR_BGR2GRAY)
                        
                         hand_img_norm = hand_img_resized/255
                         cv2.imshow('Hand Image', hand_img_resized)
                         hand_img_norm = np.expand_dims(hand_img_norm,axis=0)
-                        gesture_class = classification_model.predict(hand_img_norm)
+                        gesture_class = classification_model.predict(landmarks)
                         print(labels[np.argmax(gesture_class)])
                         cv2.rectangle(frame, start, end, (0, 255, 0), 2)
                         cv2.putText(frame, labels[np.argmax(gesture_class)], (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
