@@ -19,7 +19,7 @@ def apply_edge_detection_to_image(img):
     sobel_combined = np.uint8(sobel_combined)
     return sobel_combined
 # Carica il modello di classificazione delle immagini
-classification_model = load_model("./Modelli/nn_landmarks")
+classification_model = load_model("./Modelli/nn_landmarks.h5")
 with open("labels.json", 'r') as file_json:
     labels = json.load(file_json)
 # Inizializza il rilevatore di mano di MediaPipe
