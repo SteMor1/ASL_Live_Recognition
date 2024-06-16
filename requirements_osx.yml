@@ -1,4 +1,5 @@
-name: ML
+#per creare l'ambiente utilizzare: conda envce create --name <nome> -f <questo_file>
+name: ML2
 channels:
   - conda-forge
   - defaults
