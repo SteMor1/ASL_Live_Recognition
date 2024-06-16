@@ -19,7 +19,7 @@ def apply_edge_detection_to_image(img):
     sobel_combined = np.uint8(sobel_combined)
     return sobel_combined
 # Carica il modello di classificazione delle immagini
-classification_model = load_model("./Modelli/tuned_cnn")
+classification_model = load_model("./Modelli/nn_landmarks")
 with open("labels.json", 'r') as file_json:
     labels = json.load(file_json)
 # Inizializza il rilevatore di mano di MediaPipe
@@ -70,7 +70,7 @@ def detect_and_classify_gesture(frame):
                         hand_img_norm = hand_img_resized/255
                         cv2.imshow('Hand Image', hand_img_resized)
                         hand_img_norm = np.expand_dims(hand_img_norm,axis=0)
-                        gesture_class = classification_model.predict(hand_img_norm)
+                        gesture_class = classification_model.predict(landmarks)
                         #print(labels[np.argmax(gesture_class)])
                         cv2.rectangle(frame, start, end, (0, 255, 0), 2)
                         
